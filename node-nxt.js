@@ -1,5 +1,5 @@
-var sys = require ('sys'),
-	fs = require('fs');
+
+var fs = require('fs');
 
 
 
@@ -18,7 +18,7 @@ function toNumbers (callback) {
 		var result = [],
 			i,
 			l = arguments.length;
-			
+
 		for (i = 0; i < l; i++) result[i] = parseInt (arguments[i], 10);
 		return callback.apply (this, result);
 	};
@@ -39,7 +39,7 @@ function escape (val) {
 
 
 exports.connect = function (path, callback) {
-	new Nxt (path).on ('connect', callback).on ('error', sys.error);
+	new Nxt (path).on ('connect', callback).on ('error', console.error);
 };
 
 
@@ -48,12 +48,12 @@ exports.connect = function (path, callback) {
 var Nxt = function (path) {
 	var me = this,
 		chunkData = '> ';
-	
+
 	this._fd = null;
 	this._events = {};
 	this._callbacks = [];
-	
-	
+
+
 	fs.createReadStream (path, { flags: 'r+' }).on ('open', function (fd) {
 		me._fd = fd;
 		me._fire ('connect', [me]);
@@ -74,7 +74,7 @@ var Nxt = function (path) {
 	}).on ('data', function (chunk) {
 		var pos;
 		chunkData += chunk;
-		
+
 		while ((pos = chunkData.indexOf ('\n')) >= 0) {
 			me._onData (chunkData.substr (0, pos - 1));
 			chunkData = chunkData.substr (pos + 1);
@@ -103,23 +103,23 @@ Nxt.prototype._fire = function (event, params) {
 
 
 Nxt.prototype._onData = function (data) {
-	//sys.print ('DATA: ' + data + '\n');
-	
+	console.log ('DATA: ' + data + '\n');
+
 	if (data.substr (0, 1) == '>') return;
-	
+
 	var index,
 		callback,
 		pos = data.indexOf ('\t');
 
 	if (pos >= 0) {
 		index = parseInt (data.substr (0, pos), 10);
-		
+
 		if (index !== undefined && (callback = this._callbacks[index])) {
 			data = data.substr (pos + 1);
 			callback.apply (this, data.split ('\t'));
 			this._callbacks[index] = null;
 		}
-	}		
+	}
 };
 
 
@@ -127,7 +127,7 @@ Nxt.prototype._onData = function (data) {
 
 Nxt.prototype._send = function (command, callback) {
 	var index = '';
-	
+
 	if (callback) {
 		index = this._callbacks.indexOf (null);
 		if (index === -1) index = this._callbacks.length;
@@ -190,10 +190,10 @@ Nxt.prototype.BtFactoryReset = function () {
 
 
 Nxt.prototype.BtGetConnectEntry = function (idx, callback) {
-	var wrap = function (name, klass, pin, addr, handle, status, linkq) {
-		return callback (name, parseInt (klass, 10), pin, addr, parseInt (handle, 10), parseInt (status, 10), parseInt (linkq, 10));
+	var wrap = function (name, cln, pin, addr, handle, status, linkq) {
+		return callback (name, parseInt (cln, 10), pin, addr, parseInt (handle, 10), parseInt (status, 10), parseInt (linkq, 10));
 	};
-	
+
 	this._send ('nxt.BtGetConnectEntry (' + escape (idx) + ')', wrap);
 };
 
@@ -201,10 +201,10 @@ Nxt.prototype.BtGetConnectEntry = function (idx, callback) {
 
 
 Nxt.prototype.BtGetDeviceEntry = function (idx, callback) {
-	var wrap = function (name, klass, addr, status) {
-		return callback (name, parseInt (klass, 10), addr, parseInt (status, 10));
+	var wrap = function (name, cln, addr, status) {
+		return callback (name, parseInt (cln, 10), addr, parseInt (status, 10));
 	};
-	
+
 	this._send ('nxt.BtGetDeviceEntry (' + escape (idx) + ')', wrap);
 };
 
@@ -383,7 +383,7 @@ Nxt.prototype.FileExists = function (name, callback) {
 	var wrap = function (string) {
 		return callback (string === 'true');
 	};
-	
+
 	this._send ('nxt.FileExists (' + escape (name) + ')', wrap);
 };
 
@@ -401,7 +401,7 @@ Nxt.prototype.FileHandleInfo = function (handle, callback) {
 	wrap = function (type, name, block, maxBytes, curBytes, curPtr) {
 		return callback (parseInt (type, 10), name, parseInt (block, 10), parseInt (maxBytes, 10), parseInt (curBytes, 10), parseInt (curPtr, 10));
 	};
-		
+
 	this._send ('nxt.FileHandleInfo (' + escape (handle) + ')', wrap);
 };
 
@@ -419,7 +419,7 @@ Nxt.prototype.FileRead = function (handle, bytes, callback) {
 	var wrap = function (string) {
 		return callback ((string === 'nil')? undefined : string);
 	};
-	
+
 	this._send ('nxt.FileRead (' + escape (handle) + ',' + escape (bytes) + ')', wrap);
 };
 
@@ -651,8 +651,8 @@ Nxt.prototype.XMODEMRecv = function (callback) {
 			default: return callback (val);
 		}
 	};
-	
-	this._send ('nxt.XMODEMRecv ()', wrap);	
+
+	this._send ('nxt.XMODEMRecv ()', wrap);
 };
 
 
@@ -663,9 +663,6 @@ Nxt.prototype.XMODEMSend = function () {
 		if (val === '') return callback ();
 		return !!val;
 	};
-	
+
 	this._send ('nxt.XMODEMSend ()', wrap);
 };
-
-
-
